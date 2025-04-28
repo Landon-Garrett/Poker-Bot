@@ -4,63 +4,257 @@ def main():
     print("Welcome to the poker game!")
 
     chips = int(input("Enter your chips: "))
-    player_cards = input("Enter your cards: ").split()
+    again = 'y'
+    while again.lower() != 'n' and chips > 0:
+        print(f"Chips equal: {chips}")
+        pot = 0
+        player_cards = input("Enter your cards: ").split()
 
-    print("Are you first: ")
-    first = input("Enter y/n: ")
+        #handles preflop betting
+        bet,opponent_bet = preflop(player_cards, chips)
+        if bet == -1:
+            print(f"You folded. Opponent wins the pot of {opponent_bet} .")
+            again = input("Do you want to play again? (y/n): ")
+            continue
+        if opponent_bet == -1:
+            print(f"Opponent folded.I win pot of {bet} chips!")
+            chips += bet
+            again = input("Do you want to play again? (y/n): ")
+            continue
+        chips -= bet
+        print(f"Chips left: {chips}")
+        pot += bet + opponent_bet
+        print(f"Pot is: {pot}")
 
-    #handles preflop betting
-    bet =preflop(player_cards, chips, first)
-    chips -= bet
-    print(f"Chips left: {chips}")
+        #handles flop betting
+        flop = input("Enter flop cards: ").split()
+        bet,opponent_bet = flop_betting(player_cards, flop,chips)
+        if bet == -1:
+            print(f"You folded. Opponent wins the pot of {pot} .")
+            again = input("Do you want to play again? (y/n): ")
+            continue
+        if opponent_bet == -1:
+            print(f"Opponent folded.I win pot of {pot} chips!")
+            chips += pot
+            again = input("Do you want to play again? (y/n): ")
+            continue
+        chips -= bet
+        print(f"Chips left: {chips}")
+        pot += bet + opponent_bet
+        print(f"Pot is: {pot}")
 
-    #handles flop betting
-    flop = input("Enter flop cards: ").split()
-    bet = flop_betting(player_cards, flop,chips)
-    chips -= bet
-    print(f"Chips left: {chips}")
+        #handles turn betting
+        turn = input("Enter turn card: ").split()
+        bet,opponent_bet = turn_betting(player_cards, flop + turn,chips)
+        if bet == -1:
+            print(f"You folded. Opponent wins the pot of {pot} .")
+            again = input("Do you want to play again? (y/n): ")
+            continue
+        if opponent_bet == -1:
+            print(f"Opponent folded.I win pot of {pot} chips!")
+            chips += pot
+            again = input("Do you want to play again? (y/n): ")
+            continue
+        chips -= bet
+        print(f"Chips left: {chips}")
+        pot += bet + opponent_bet
+        print(f"Pot is: {pot}")
 
-    #handles turn betting
-    turn = input("Enter turn card: ").split()
-    bet = turn_betting(player_cards, flop + turn,chips)
-    chips -= bet
-    print(f"Chips left: {chips}")
+        #handles river betting
+        river = input("Enter river card: ").split()
+        bet,opponent_bet = river_betting(player_cards, flop + turn + river,chips)
+        if bet == -1:
+            print(f"You folded. Opponent wins the pot of {pot} .")
+            again = input("Do you want to play again? (y/n): ")
+            continue
+        if opponent_bet == -1:
+            print(f"Opponent folded.I win pot of {pot} chips!")
+            chips += pot
+            again = input("Do you want to play again? (y/n): ")
+            continue
+        chips -= bet
+        print(f"Chips left: {chips}")
+        pot += bet + opponent_bet
+        print(f"Pot is: {pot}")
 
-    #handles river betting
-    river = input("Enter river card: ").split()
-    bet = river_betting(player_cards, flop + turn + river,chips)
-    chips -= bet
-    print(f"Chips left: {chips}")
+        print("Winner is: ")
+        opponent_cards = input("Enter opponent's cards: ").split()
+        community_cards = flop + turn + river
+        winner_index = determine_winner(player_cards, opponent_cards, community_cards)
+        if winner_index == 0:
+            print(f"I win the pot of {pot} chips!")
+            chips += pot
+        elif winner_index == 1:
+            print(f"Opponent wins the pot of {pot} chips!")
+        else:
+            print("It's a tie! Both players win half the pot.")
+            print(f"Each player wins {pot//2} chips!")
+            chips += pot // 2
 
-    print("Winner is: ")
-    opponent_cards = input("Enter opponent's cards: ").split()
-    community_cards = flop + turn + river
-    determine_winner(player_cards, opponent_cards, community_cards)
+        again = input("Do you want to play again? (y/n): ")
+
+# Preflop Betting
+def preflop(player_cards, chips):
+    preflop_strength = evaluate_preflop(player_cards)
+    print("Preflop evaluation:", preflop_strength)
+
+    strength_to_bet = {
+        "strong": 0.2,
+        "Moderate": 0.1,
+        "High card": 0.05,
+        "Weak": 0
+    }
+
+    first = input("Is it your turn? (y/n): ")
+
+    if first.lower() == 'y':
+        initial_bet = int(chips * strength_to_bet.get(preflop_strength, 0))
+        print(f"Raised {initial_bet} chips")
+        return initial_bet,0
+    
+    else:
+        opponent_bet = int(input("Enter opponent's raise value: "))
+
+        if opponent_bet == -1:
+            print("Opponent folded.")
+            return 0,-1 #because he is folding we return -1 to indicate that the game is over
+
+        if preflop_strength == "Weak":
+            if opponent_bet > chips * 0.2:
+                print("Folded")
+                return -1,opponent_bet #because we are folding, we return -1 to indicate that the game is over
+            else:
+                print(f"Called {opponent_bet} chips")
+                bet = opponent_bet
+                return bet,opponent_bet
+
+        target_bet = int(chips * strength_to_bet.get(preflop_strength, 0))
+
+    if opponent_bet == 0:
+        print(f"Raised {target_bet} chips")
+        return target_bet,opponent_bet
+    elif opponent_bet < target_bet:
+        if preflop_strength == "strong":
+            raise_amount = opponent_bet * 2
+        elif preflop_strength == "Moderate":
+            raise_amount = opponent_bet * 1.5
+        else:
+            raise_amount = opponent_bet * 1.2
+        print(f"Raised {raise_amount} chips")
+        return raise_amount,opponent_bet
+    elif opponent_bet > target_bet:
+        #if opponent bets more than chips and we have a strong or moderate hand, we go all in
+        if opponent_bet > chips and preflop_strength == "moderate" or preflop_strength =="strong":
+            print("All in")
+            bet = chips
+        #if opponent bets more than chips and we have a weak hand, we fold
+        elif opponent_bet > chips and preflop_strength != "moderate" or preflop_strength != "strong":
+            print("Folded")
+            return -1,opponent_bet
+        #else if opponents bets less than chips, we call the bet
+        else:
+            print(f"Called {opponent_bet} chips")
+            bet = opponent_bet
+        return bet,opponent_bet
 
 
-#handles preflop betting
-def preflop(player_cards, chips, first):
-   pass
+# Generalized Betting for Flop, Turn, and river
+def street_betting(player_cards, board_cards, chips, street_name):
+    is_turn = input(f"Is it your turn on the {street_name}? (y/n): ")
+    all_cards = player_cards + board_cards
+    evaluation, _ = evaluate_hand(all_cards)
+    street_score = evaluation[0]
+
+    print(f"{street_name} evaluation:", street_score)
+
+    # Base percentages depending on hand strength
+    score_to_base = {
+        1: 0.1,    # High card
+        2: 0.2,  # One pair
+        3: 0.3,  # Two pair
+        4: 0.4,  # Three of a kind
+        5: 0.5,  # Straight
+        6: 0.6,  # Flush
+        7: 0.7,  # Full house
+        8: 0.8,  # Four of a kind
+        9: 0.9,  # Straight flush
+        10: 1.0  # Royal flush
+    }
+
+    # Different aggressiveness based on street
+    street_multiplier = {
+        "Flop": 1.0,
+        "Turn": 1.5,
+        "River": 2.0
+    }
+
+    #used to determine the bet amount based on the street score and street name
+    base_bet_percentage = score_to_base.get(street_score, 0)
+    multiplier = street_multiplier.get(street_name, 1.0)
+    bet_amount = int(chips * base_bet_percentage * multiplier)
+
+    if is_turn.lower() == 'y':
+        if bet_amount == 0:
+            print("Checked 0 chips")
+        else:
+            print(f"Raised {bet_amount} chips")
+        return bet_amount,0
+    
+    else:
+        opponent_bet = int(input(f"Enter opponent's raise value on the {street_name}: "))
+
+        if opponent_bet == -1:
+            print("Opponent folded.")
+            return 0,-1 #because he is folding we return -1 to indicate that the game is over
+            
+        # Only activates when deciding to fold based on preflop or weak postflop hand, does not fold on strong hand during preflop
+        if (street_name == "Preflop" and evaluate_preflop(player_cards) != "strong") or (street_name != "Preflop" and street_score == 1):
+            if opponent_bet > chips * 0.3:
+                print("Folded")
+                return -1, opponent_bet  # Return -1 to indicate fold
+            else:
+                print(f"Called {opponent_bet} chips")
+                bet = opponent_bet
+                return bet, opponent_bet
 
 
-#handles flop betting
-def flop_betting(player_cards, flop, chips,):
-   pass
+        if opponent_bet == 0:
+            print(f"Raised {bet_amount} chips")
+            return bet_amount,opponent_bet
+        elif opponent_bet < bet_amount:
+            raise_amount = int(opponent_bet * street_multiplier.get(street_name, 1.0))
+            print(f"Raised {raise_amount} chips")
+            return raise_amount,opponent_bet
+        elif opponent_bet > bet_amount:
+            #if opponent bets more than chips and we have a hand stronger than 2 (one pair), we go all in
+            if opponent_bet > chips and street_score >= 2:
+                print("All in")
+                bet = chips
+            #if opponent bets more than chips and we have a hand weaker than 2 (one pair), we fold
+            elif opponent_bet > chips and street_score < 2:
+                print("Folded because of weak hand")
+                return -1,opponent_bet
+            #else if opponents bets less than chips, we call the bet
+            else:
+                print(f"Called else {opponent_bet} chips")
+                bet = opponent_bet
+            return bet,opponent_bet
+ 
 
 
-#handles turn betting
+# Flop, Turn and river betting call street_betting with appropriate names
+def flop_betting(player_cards, flop, chips):
+    return street_betting(player_cards, flop, chips, "Flop")
+
 def turn_betting(player_cards, turn, chips):
-    pass
+    return street_betting(player_cards, turn, chips, "Turn")
 
-
-#handles river betting
 def river_betting(player_cards, river, chips):
-    pass
-
+    return street_betting(player_cards, river, chips, "River")
 
 #handles preflop evaluation
 def evaluate_preflop(hole_cards):
-    """Evaluate the strength of the hole cards preflop."""
+    #Evaluate the strength of the hole cards preflop.
     ranks = '23456789TJQKA'
 
     #Extracts the suits from the hole cards
@@ -143,11 +337,13 @@ def score(hand):
     #and the difference between the highest and lowest rank is 4
     straight = len(rank_counts) == 5 and rank_range == 4
 
-    # Special case: 5-high straight (A, 2, 3, 4, 5)
-    if set(rank_values) == {12, 0, 1, 2, 3}:  # Ace is treated as low
+    # Special case: 5-high straight (A, 2, 3, 4, 5), and also check for 5 high straight flush
+    if set(rank_values) == {12, 0, 1, 2, 3}:  # Ace is treated as 
         straight = True
         sorted_ranks = [3, 2, 1, 0, 12]
-
+        if flush:
+            return (9,), sorted_ranks # Straight flush
+    
     # Royal flush
     if flush and straight and max(rank_values) == ranks.find('A'):
         return (10,), sorted_ranks
@@ -250,11 +446,12 @@ def determine_winner(player_cards, opponent_cards, community_cards):
 
         if winner_index == 0:
             print(f"The winning 5-card hand is mine: {best_5_card_hand_str}, type: {winning_hand_type}")
-        else:
+        elif winner_index ==1:
             print(f"The winning 5-card hand is the opponent: {best_5_card_hand_str}, type: {winning_hand_type}")
     else:
         print("It's a tie!")
-    return
+
+    return winner_index
 
 if __name__ == "__main__":
     main()
