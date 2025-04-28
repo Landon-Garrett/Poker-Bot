@@ -1,3 +1,4 @@
+import random 
 from itertools import combinations
 
 def main():
@@ -452,6 +453,92 @@ def determine_winner(player_cards, opponent_cards, community_cards):
         print("It's a tie!")
 
     return winner_index
+
+def decide_action(player_hand_strength, oppenent_hand_strength, opponent_bet, round_stage):
+    # Player's decision 
+    if round_stage == "pre-flop":
+        #Pre-flop decision based on hand strength
+        if player_hand_strength >= 8: #Strong hand 
+            return "bet"
+        elif player_hand_strength >= 5: # Moderate hand  
+            return "call" # Call if hand is not too weak
+        else:
+            return "fold" #Weak hand, fold 
+            
+    elif round_stage in ["flop", "turn", "river"]:
+        #Post-flop, turn, or river, decisions based on hand strength and opponent's actions
+        if player_hand_strength >= 8: #Strong hand 
+            if oppenent_bet > 0:
+                return "raise"    #Raise if opponent bet
+            return "bet" #Otherwise, bet 
+        elif player_hand_strength >= 5:    #moderate hand 
+            if oppenent_bet > 0:
+                return "call" #Call if opponent bet 
+            return "check"    #Otherwise, check 
+        else:
+            return "fold"    #Weak hand, fold 
+
+def simulate_hand():
+    #Create a deck of cards 
+    deck = [f"{rank}{suit}" for rank in "23456789TJQKA" for suit in "cdhs"]
+
+    #Shuffle deck 
+    random.shuffle(deck)
+
+    #Deal 2 cards each 
+    player_cards = [deck.pop(), deck.pop()]
+    oppenent_cards = [deck.pop(), deck.pop]
+
+    #Deal community cards (5 cards: flop, turn, and river)
+    community_cards = [deck.pop() for _ in range(5)]
+
+    print(f"Player's Cards: {player_cards}") 
+    print(f"Oppenent's Cards: {oppenent_cards}")
+    print(f"Community Cards: {community_cards}")
+
+    #Simulate pre-flop action (before community cards are revealed)
+    player_hand_strength = evaluate_hand(player_cards)
+    oppenent_hand_strength = evaluate_hand(opponent_cards)
+    round_stage = "pre-flop"
+    
+    #Simulate opponent's action (random for now)
+    opponent_actions = ["bet", "check", "fold"]
+    opponent_action = random.choice(oppenent_actions)
+    print(f"Opppnent's action pre-flop: {opponent_action}")
+
+    player_action = decide_action(player_hand_strength, opponent_hand_strength, 0, round_stage)
+    print(f"Player's action pre-flop: {player_action}") 
+
+    #Proceed to flop, turn, and river betting rounds
+    for stage in ["flop", "turn", "river"]:
+        if stage == "flop":
+            community_cards = community_cards[:3]
+        elif stage == "turn":
+            community_cards = community_cards[:4]
+        else:
+            community_cards = community_cards[:5]
+
+        print(f"\nStage: {stage}")
+        print(f"Community Cards: {community_cards}")
+
+        #Hand strength after stage cards are revealed 
+        player_hand_strength = evaluate_hand(player_cards + community_cards)
+        opponent_hand_strength = evaluate_hand(opponent_cards + community_cards)
+
+        #Opponent's action 
+        opponent_action = random.choice(opponent_actions)
+        print(f"Opponent's action {stage}: {opponent_action}")
+
+        #Player's action 
+        player_action = decide_action(player_hand_strength, opponent_hand_strength, 0, stage)
+        print(f"\nPlayer's action {stage}: {player_action}")
+
+        #After river, determine the winner 
+        winner = determine_winner(player_cards, opponent_cards, community_cards)
+        print(f"\nWinner: {'Player' if winner == 0 else 'Opponent' if winner == 1 else 'Tie'}")
+    
+        
+    
 
 if __name__ == "__main__":
     main()
