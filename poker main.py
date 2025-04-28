@@ -1,4 +1,3 @@
-import random 
 from itertools import combinations
 
 def main():
@@ -92,7 +91,7 @@ def main():
             print(f"Each player wins {pot//2} chips!")
             chips += pot // 2
 
-        again = input("Do you want to play again? (y/n): ")
+        again = input("Do you want to play again? (y/n): ") 
 
 # Preflop Betting
 def preflop(player_cards, chips):
@@ -108,20 +107,24 @@ def preflop(player_cards, chips):
 
     first = input("Is it your turn? (y/n): ")
 
+    #if it is our turn, we raise the target bet amount based on the preflop strength and chips available
     if first.lower() == 'y':
         initial_bet = int(chips * strength_to_bet.get(preflop_strength, 0))
+        initial_bet = min(initial_bet, chips)  # Cap the bet at available chips
         print(f"Raised {initial_bet} chips")
         return initial_bet,0
     
     else:
         opponent_bet = int(input("Enter opponent's raise value: "))
 
+        #if opponent bets -1, it means he folded
         if opponent_bet == -1:
             print("Opponent folded.")
             return 0,-1 #because he is folding we return -1 to indicate that the game is over
 
+        #if our hand is weak, we fold if the opponent bets more than 30% of our chips
         if preflop_strength == "Weak":
-            if opponent_bet > chips * 0.2:
+            if opponent_bet > chips * 0.3:
                 print("Folded")
                 return -1,opponent_bet #because we are folding, we return -1 to indicate that the game is over
             else:
@@ -129,34 +132,38 @@ def preflop(player_cards, chips):
                 bet = opponent_bet
                 return bet,opponent_bet
 
+        #sets the target bet amount based on the preflop strength and chips available
         target_bet = int(chips * strength_to_bet.get(preflop_strength, 0))
+         # Cap the target bet at available chips, by returning the smaller one
+        target_bet = min(target_bet, chips) 
 
-    if opponent_bet == 0:
-        print(f"Raised {target_bet} chips")
-        return target_bet,opponent_bet
-    elif opponent_bet < target_bet:
-        if preflop_strength == "strong":
-            raise_amount = opponent_bet * 2
-        elif preflop_strength == "Moderate":
-            raise_amount = opponent_bet * 1.5
-        else:
-            raise_amount = opponent_bet * 1.2
-        print(f"Raised {raise_amount} chips")
-        return raise_amount,opponent_bet
-    elif opponent_bet > target_bet:
-        #if opponent bets more than chips and we have a strong or moderate hand, we go all in
-        if opponent_bet > chips and preflop_strength == "moderate" or preflop_strength =="strong":
-            print("All in")
-            bet = chips
-        #if opponent bets more than chips and we have a weak hand, we fold
-        elif opponent_bet > chips and preflop_strength != "moderate" or preflop_strength != "strong":
-            print("Folded")
-            return -1,opponent_bet
-        #else if opponents bets less than chips, we call the bet
-        else:
-            print(f"Called {opponent_bet} chips")
-            bet = opponent_bet
-        return bet,opponent_bet
+        #if the opponent bets 0, we raise the target bet amount
+        if opponent_bet == 0:
+            print(f"Raised {target_bet} chips")
+            return target_bet,opponent_bet
+        elif opponent_bet < target_bet:
+            if preflop_strength == "strong":
+                raise_amount = opponent_bet * 2
+            elif preflop_strength == "Moderate":
+                raise_amount = opponent_bet * 1.5
+            else:
+                raise_amount = opponent_bet * 1.2
+            print(f"Raised {raise_amount} chips")
+            return raise_amount,opponent_bet
+        elif opponent_bet > target_bet:
+            #if opponent bets more than chips and we have a strong or moderate hand, we go all in
+            if opponent_bet > chips and( preflop_strength == "moderate" or preflop_strength =="strong"):
+                print("All in")
+                bet = chips
+            #if opponent bets more than chips and we have a weak hand, we fold
+            elif opponent_bet > chips and preflop_strength != "moderate" and preflop_strength != "strong":
+                print("Folded")
+                return -1,opponent_bet
+            #else if opponents bets less than chips, we call the bet
+            else:
+                print(f"Called {opponent_bet} chips")
+                bet = opponent_bet
+            return bet,opponent_bet
 
 
 # Generalized Betting for Flop, Turn, and river
@@ -193,6 +200,7 @@ def street_betting(player_cards, board_cards, chips, street_name):
     base_bet_percentage = score_to_base.get(street_score, 0)
     multiplier = street_multiplier.get(street_name, 1.0)
     bet_amount = int(chips * base_bet_percentage * multiplier)
+    bet_amount = min(bet_amount,chips)
 
     if is_turn.lower() == 'y':
         if bet_amount == 0:
@@ -208,8 +216,8 @@ def street_betting(player_cards, board_cards, chips, street_name):
             print("Opponent folded.")
             return 0,-1 #because he is folding we return -1 to indicate that the game is over
             
-        # Only activates when deciding to fold based on preflop or weak postflop hand, does not fold on strong hand during preflop
-        if (street_name == "Preflop" and evaluate_preflop(player_cards) != "strong") or (street_name != "Preflop" and street_score == 1):
+        # Only activates when having a weak and and then desides to either fold or call
+        if street_score == 1:
             if opponent_bet > chips * 0.3:
                 print("Folded")
                 return -1, opponent_bet  # Return -1 to indicate fold
@@ -218,21 +226,23 @@ def street_betting(player_cards, board_cards, chips, street_name):
                 bet = opponent_bet
                 return bet, opponent_bet
 
-
+        #if the opponent bets 0, we raise the target bet amount
         if opponent_bet == 0:
             print(f"Raised {bet_amount} chips")
             return bet_amount,opponent_bet
+        #if the opponent bets less than the target bet amount, we raise the bet amount based on the street score
         elif opponent_bet < bet_amount:
             raise_amount = int(opponent_bet * street_multiplier.get(street_name, 1.0))
             print(f"Raised {raise_amount} chips")
             return raise_amount,opponent_bet
+        #if the opponent bets more than the target bet amount, we check if we have a strong hand
         elif opponent_bet > bet_amount:
-            #if opponent bets more than chips and we have a hand stronger than 2 (one pair), we go all in
-            if opponent_bet > chips and street_score >= 2:
+            #if opponent bets more than chips and we have a hand stronger than 3 (two pair), we go all in
+            if opponent_bet > chips and street_score >= 3:
                 print("All in")
                 bet = chips
-            #if opponent bets more than chips and we have a hand weaker than 2 (one pair), we fold
-            elif opponent_bet > chips and street_score < 2:
+            #if opponent bets more than chips and we have a hand weaker than 3 (two pair), we fold
+            elif opponent_bet > chips and street_score < 3:
                 print("Folded because of weak hand")
                 return -1,opponent_bet
             #else if opponents bets less than chips, we call the bet
@@ -391,6 +401,7 @@ def evaluate_hand(hand):
     # Iterate through all 5-card combinations
     for hand in combinations(hand, 5):
         hand_score = score(hand)  # Evaluate the score of the current hand
+        #uses sorted_ranks to determine the best hand
         if best_score is None or hand_score > best_score:
             best_hand = hand  # Update the best hand
             best_score = hand_score  # Update the best score
@@ -453,92 +464,6 @@ def determine_winner(player_cards, opponent_cards, community_cards):
         print("It's a tie!")
 
     return winner_index
-
-def decide_action(player_hand_strength, opponent_hand_strength, opponent_bet, round_stage):
-    # Player's decision 
-    if round_stage == "pre-flop":
-        #Pre-flop decision based on hand strength
-        if player_hand_strength >= 8: #Strong hand 
-            return "bet"
-        elif player_hand_strength >= 5: # Moderate hand  
-            return "call" # Call if hand is not too weak
-        else:
-            return "fold" #Weak hand, fold 
-            
-    elif round_stage in ["flop", "turn", "river"]:
-        #Post-flop, turn, or river, decisions based on hand strength and opponent's actions
-        if player_hand_strength >= 8: #Strong hand 
-            if opponent_bet > 0:
-                return "raise"    #Raise if opponent bet
-            return "bet" #Otherwise, bet 
-        elif player_hand_strength >= 5:    #moderate hand 
-            if opponent_bet > 0:
-                return "call" #Call if opponent bet 
-            return "check"    #Otherwise, check 
-        else:
-            return "fold"    #Weak hand, fold 
-
-def simulate_hand():
-    #Create a deck of cards 
-    deck = [f"{rank}{suit}" for rank in "23456789TJQKA" for suit in "cdhs"]
-
-    #Shuffle deck 
-    random.shuffle(deck)
-
-    #Deal 2 cards each 
-    player_cards = [deck.pop(), deck.pop()]
-    opponent_cards = [deck.pop(), deck.pop]
-
-    #Deal community cards (5 cards: flop, turn, and river)
-    community_cards = [deck.pop() for _ in range(5)]
-
-    print(f"Player's Cards: {player_cards}") 
-    print(f"Opponent's Cards: {opponent_cards}")
-    print(f"Community Cards: {community_cards}")
-
-    #Simulate pre-flop action (before community cards are revealed)
-    player_hand_strength = evaluate_hand(player_cards)
-    opponent_hand_strength = evaluate_hand(opponent_cards)
-    round_stage = "pre-flop"
-    
-    #Simulate opponent's action (random for now)
-    opponent_actions = ["bet", "check", "fold"]
-    opponent_action = random.choice(opponent_actions)
-    print(f"Opppnent's action pre-flop: {opponent_action}")
-
-    player_action = decide_action(player_hand_strength, opponent_hand_strength, 0, round_stage)
-    print(f"Player's action pre-flop: {player_action}") 
-
-    #Proceed to flop, turn, and river betting rounds
-    for stage in ["flop", "turn", "river"]:
-        if stage == "flop":
-            community_cards = community_cards[:3]
-        elif stage == "turn":
-            community_cards = community_cards[:4]
-        else:
-            community_cards = community_cards[:5]
-
-        print(f"\nStage: {stage}")
-        print(f"Community Cards: {community_cards}")
-
-        #Hand strength after stage cards are revealed 
-        player_hand_strength = evaluate_hand(player_cards + community_cards)
-        opponent_hand_strength = evaluate_hand(opponent_cards + community_cards)
-
-        #Opponent's action 
-        opponent_action = random.choice(opponent_actions)
-        print(f"Opponent's action {stage}: {opponent_action}")
-
-        #Player's action 
-        player_action = decide_action(player_hand_strength, opponent_hand_strength, 0, stage)
-        print(f"\nPlayer's action {stage}: {player_action}")
-
-        #After river, determine the winner 
-        winner = determine_winner(player_cards, opponent_cards, community_cards)
-        print(f"\nWinner: {'Player' if winner == 0 else 'Opponent' if winner == 1 else 'Tie'}")
-    
-        
-    
 
 if __name__ == "__main__":
     main()
