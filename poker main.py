@@ -35,7 +35,8 @@ def main():
     print("Winner is: ")
     opponent_cards = input("Enter opponent's cards: ").split()
     community_cards = flop + turn + river
-    winner = determine_winner(player_cards, opponent_cards, community_cards)
+    determine_winner(player_cards, opponent_cards, community_cards)
+
 
 #handles preflop betting
 def preflop(player_cards, chips, first):
@@ -199,52 +200,6 @@ def evaluate_hand(hand):
 
     return score(best_hand)  # Return the score of the best hand
 
-
-def poker(hands):
-    
-    scores = []
-    for i, hand in enumerate(hands):
-        # Evaluate the hand and get the score
-        hand_score = evaluate_hand(hand.split())
-        scores.append((i, hand_score))
-
-    #x[1] sorts the scores by the second element of the tuple (the score)
-    #sorted(scores, key=lambda x: x[1]) sorts the scores in ascending order
-    #[-1] gets the last element of the sorted list, which is the highest score
-    #Then [0] gets the index of the winning hand from the tuple (index, score)
-    winner_index = sorted(scores, key=lambda x: x[1])[-1][0]
-
-    # Get the winning hand using the index
-    winning_hand = hands[winner_index]
-    
-    # used to outptut the best 5-card hand for the winner
-    #needed because when given all 5 cards plus hole cards it will return all 7 cards
-    #this instead shows the best 5-card hand that won
-    #combinations(winning_hand.split(), 5 ) generates all possible combinations of 5 cards from the winning hand
-    #key=score finds the best combination based on the score function
-    #max() returns the combination with the highest score
-    best_5_card_hand = max(combinations(winning_hand.split(), 5), key=score)
-    best_5_card_hand_str= " ".join(best_5_card_hand) # Convert tuple to string for output
-
-    # Determine the type of the winning hand
-    hand_score, _ = score(best_5_card_hand)
-    hand_types = {
-        10: "Royal Flush",
-        9: "Straight Flush",
-        8: "Four of a Kind",
-        7: "Full House",
-        6: "Flush",
-        5: "Straight",
-        4: "Three of a Kind",
-        3: "Two Pair",
-        2: "One Pair",
-        1: "High Card"
-    }
-    winning_hand_type = hand_types[hand_score[0]]
-
-    return best_5_card_hand_str, winner_index,winning_hand_type
-
-
 def determine_winner(player_cards, opponent_cards, community_cards):
     # Combine hole cards with community cards
     player_hand = player_cards + community_cards
@@ -253,29 +208,53 @@ def determine_winner(player_cards, opponent_cards, community_cards):
     # Format hands as strings for the poker function
     hands = [" ".join(player_hand), " ".join(opponent_hand)]
 
-    # Evaluate the hands and get their scores
+    # Evaluate the hands
     player_score = evaluate_hand(player_hand)
     opponent_score = evaluate_hand(opponent_hand)
 
-    # Extract just the hand scores (e.g., 5 for a Straight)
-    player_hand_score = player_score[0][0]
-    opponent_hand_score = opponent_score[0][0]
+    # Compare full scores directly
+    if player_score > opponent_score:
+        winner_index = 0
+    elif player_score < opponent_score:
+        winner_index = 1
+    else:
+        winner_index = -1  # Tie
 
-    # Determine the winner
-    if player_hand_score == opponent_hand_score & player_hand_score >=5:
+    # Find the best 5-card hand for display
+    if winner_index != -1:
+        # Get the best 5-card hand from the winner's cards by comparing all combinations
+        # and using the score function to determine the best hand 
+        best_5_card_hand = max(combinations(hands[winner_index].split(), 5), key=score)    
+        best_5_card_hand_str = " ".join(best_5_card_hand) # Convert to string for display
+
+        # Get the score of the best 5-card hand by calling the score function
+        #,_ means that we are not interested in the second element of the tuple returned by the score function
+        hand_score, _ = score(best_5_card_hand)
+
+        #create a dictionary to map hand scores to their types
+        hand_types = {
+            10: "Royal Flush",
+            9: "Straight Flush",
+            8: "Four of a Kind",
+            7: "Full House",
+            6: "Flush",
+            5: "Straight",
+            4: "Three of a Kind",
+            3: "Two Pair",
+            2: "One Pair",
+            1: "High Card"
+        }
+        # Get the type of hand based on the score
+        #hand_score[0] is used to get the first element of the tuple returned by the score function
+        winning_hand_type = hand_types[hand_score[0]]
+
+        if winner_index == 0:
+            print(f"The winning 5-card hand is mine: {best_5_card_hand_str}, type: {winning_hand_type}")
+        else:
+            print(f"The winning 5-card hand is the opponent: {best_5_card_hand_str}, type: {winning_hand_type}")
+    else:
         print("It's a tie!")
-        return None
-    winning_hand, winner_index,winning_hand_type = poker(hands)
-    if winner_index == 0:
-        print(f"The winning 5-card hand is mine: {winning_hand}, type: {winning_hand_type}")
-    if winner_index == 1:
-        print(f"The winning 5-card hand is the opponent: {winning_hand}, type: {winning_hand_type}")
-    return winning_hand
-
+    return
 
 if __name__ == "__main__":
     main()
-
-
-
-
