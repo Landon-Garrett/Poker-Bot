@@ -454,7 +454,7 @@ def determine_winner(player_cards, opponent_cards, community_cards):
 
     return winner_index
 
-def decide_action(player_hand_strength, oppenent_hand_strength, opponent_bet, round_stage):
+def decide_action(player_hand_strength, opponent_hand_strength, opponent_bet, round_stage):
     # Player's decision 
     if round_stage == "pre-flop":
         #Pre-flop decision based on hand strength
@@ -468,11 +468,11 @@ def decide_action(player_hand_strength, oppenent_hand_strength, opponent_bet, ro
     elif round_stage in ["flop", "turn", "river"]:
         #Post-flop, turn, or river, decisions based on hand strength and opponent's actions
         if player_hand_strength >= 8: #Strong hand 
-            if oppenent_bet > 0:
+            if opponent_bet > 0:
                 return "raise"    #Raise if opponent bet
             return "bet" #Otherwise, bet 
         elif player_hand_strength >= 5:    #moderate hand 
-            if oppenent_bet > 0:
+            if opponent_bet > 0:
                 return "call" #Call if opponent bet 
             return "check"    #Otherwise, check 
         else:
@@ -493,12 +493,12 @@ def simulate_hand():
     community_cards = [deck.pop() for _ in range(5)]
 
     print(f"Player's Cards: {player_cards}") 
-    print(f"Oppenent's Cards: {oppenent_cards}")
+    print(f"Opponent's Cards: {opponent_cards}")
     print(f"Community Cards: {community_cards}")
 
     #Simulate pre-flop action (before community cards are revealed)
     player_hand_strength = evaluate_hand(player_cards)
-    oppenent_hand_strength = evaluate_hand(opponent_cards)
+    opponent_hand_strength = evaluate_hand(opponent_cards)
     round_stage = "pre-flop"
     
     #Simulate opponent's action (random for now)
