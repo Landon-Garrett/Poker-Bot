@@ -107,12 +107,17 @@ def preflop(player_cards, chips):
 
     first = input("Is it your turn? (y/n): ")
 
+    
+    #sets the target bet amount based on the preflop strength and chips available
+    target_bet = int(chips * strength_to_bet.get(preflop_strength, 0))
+    # Cap the target bet at available chips, by returning the smaller one
+    target_bet = min(target_bet, chips) 
+
     #if it is our turn, we raise the target bet amount based on the preflop strength and chips available
     if first.lower() == 'y':
-        initial_bet = int(chips * strength_to_bet.get(preflop_strength, 0))
-        initial_bet = min(initial_bet, chips)  # Cap the bet at available chips
-        print(f"Raised {initial_bet} chips")
-        return initial_bet,0
+        print(f"Raised {target_bet} chips")
+        opponent_bet = int(input("Enter opponent's raise value: "))
+        return target_bet,opponent_bet
     
     else:
         opponent_bet = int(input("Enter opponent's raise value: "))
@@ -123,7 +128,7 @@ def preflop(player_cards, chips):
             return 0,-1 #because he is folding we return -1 to indicate that the game is over
 
         #if our hand is weak, we fold if the opponent bets more than 30% of our chips
-        if preflop_strength == "Weak":
+        elif preflop_strength == "Weak" or preflop_strength == "High card":
             if opponent_bet > chips * 0.3:
                 print("Folded")
                 return -1,opponent_bet #because we are folding, we return -1 to indicate that the game is over
@@ -132,15 +137,11 @@ def preflop(player_cards, chips):
                 bet = opponent_bet
                 return bet,opponent_bet
 
-        #sets the target bet amount based on the preflop strength and chips available
-        target_bet = int(chips * strength_to_bet.get(preflop_strength, 0))
-         # Cap the target bet at available chips, by returning the smaller one
-        target_bet = min(target_bet, chips) 
-
         #if the opponent bets 0, we raise the target bet amount
-        if opponent_bet == 0:
+        elif opponent_bet == 0:
             print(f"Raised {target_bet} chips")
             return target_bet,opponent_bet
+        
         elif opponent_bet < target_bet:
             if preflop_strength == "strong":
                 raise_amount = opponent_bet * 2
@@ -148,9 +149,12 @@ def preflop(player_cards, chips):
                 raise_amount = opponent_bet * 1.5
             else:
                 raise_amount = opponent_bet * 1.2
+                
+            raise_amount = min(raise_amount, chips)  # Cap the raise at available chips
             print(f"Raised {raise_amount} chips")
             return raise_amount,opponent_bet
-        elif opponent_bet > target_bet:
+        
+        elif opponent_bet >= target_bet:
             #if opponent bets more than chips and we have a strong or moderate hand, we go all in
             if opponent_bet > chips and( preflop_strength == "moderate" or preflop_strength =="strong"):
                 print("All in")
@@ -203,11 +207,9 @@ def street_betting(player_cards, board_cards, chips, street_name):
     bet_amount = min(bet_amount,chips)
 
     if is_turn.lower() == 'y':
-        if bet_amount == 0:
-            print("Checked 0 chips")
-        else:
-            print(f"Raised {bet_amount} chips")
-        return bet_amount,0
+        print(f"Raised {bet_amount} chips")
+        opponent_bet = int(input(f"Enter opponent's raise value on the {street_name}: "))
+        return bet_amount,opponent_bet
     
     else:
         opponent_bet = int(input(f"Enter opponent's raise value on the {street_name}: "))
@@ -217,7 +219,7 @@ def street_betting(player_cards, board_cards, chips, street_name):
             return 0,-1 #because he is folding we return -1 to indicate that the game is over
             
         # Only activates when having a weak and and then desides to either fold or call
-        if street_score == 1:
+        elif street_score == 1:
             if opponent_bet > chips * 0.3:
                 print("Folded")
                 return -1, opponent_bet  # Return -1 to indicate fold
@@ -227,16 +229,18 @@ def street_betting(player_cards, board_cards, chips, street_name):
                 return bet, opponent_bet
 
         #if the opponent bets 0, we raise the target bet amount
-        if opponent_bet == 0:
+        elif opponent_bet == 0:
             print(f"Raised {bet_amount} chips")
             return bet_amount,opponent_bet
+        
         #if the opponent bets less than the target bet amount, we raise the bet amount based on the street score
         elif opponent_bet < bet_amount:
             raise_amount = int(opponent_bet * street_multiplier.get(street_name, 1.0))
             print(f"Raised {raise_amount} chips")
             return raise_amount,opponent_bet
+        
         #if the opponent bets more than the target bet amount, we check if we have a strong hand
-        elif opponent_bet > bet_amount:
+        elif opponent_bet >= bet_amount:
             #if opponent bets more than chips and we have a hand stronger than 3 (two pair), we go all in
             if opponent_bet > chips and street_score >= 3:
                 print("All in")
