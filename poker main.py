@@ -487,7 +487,7 @@ def simulate_hand():
 
     #Deal 2 cards each 
     player_cards = [deck.pop(), deck.pop()]
-    oppenent_cards = [deck.pop(), deck.pop]
+    opponent_cards = [deck.pop(), deck.pop]
 
     #Deal community cards (5 cards: flop, turn, and river)
     community_cards = [deck.pop() for _ in range(5)]
@@ -503,7 +503,7 @@ def simulate_hand():
     
     #Simulate opponent's action (random for now)
     opponent_actions = ["bet", "check", "fold"]
-    opponent_action = random.choice(oppenent_actions)
+    opponent_action = random.choice(opponent_actions)
     print(f"Opppnent's action pre-flop: {opponent_action}")
 
     player_action = decide_action(player_hand_strength, opponent_hand_strength, 0, round_stage)
