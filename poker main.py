@@ -117,6 +117,9 @@ def preflop(player_cards, chips):
     if first.lower() == 'y':
         print(f"Raised {target_bet} chips")
         opponent_bet = int(input("Enter opponent's raise value: "))
+        if opponent_bet == -1:
+            print("Opponent folded.")
+            return 0,-1
         return target_bet,opponent_bet
     
     else:
@@ -196,8 +199,8 @@ def street_betting(player_cards, board_cards, chips, street_name):
     # Different aggressiveness based on street
     street_multiplier = {
         "Flop": 1.0,
-        "Turn": 1.5,
-        "River": 2.0
+        "Turn": 1.2,
+        "River": 1.5
     }
 
     #used to determine the bet amount based on the street score and street name
@@ -209,6 +212,9 @@ def street_betting(player_cards, board_cards, chips, street_name):
     if is_turn.lower() == 'y':
         print(f"Raised {bet_amount} chips")
         opponent_bet = int(input(f"Enter opponent's raise value on the {street_name}: "))
+        if opponent_bet == -1:
+            print("Opponent folded.")
+            return 0,-1
         return bet_amount,opponent_bet
     
     else:
