@@ -1,3 +1,5 @@
+#Members: Landon Garrett, Diego Ramirez 
+
 from itertools import combinations
 
 def main():
@@ -5,7 +7,7 @@ def main():
 
     chips = int(input("Enter your chips: "))
     again = 'y'
-    while again.lower() != 'n' and chips > 0:
+    while again.lower() != 'n' and chips > 0:   
         print(f"Chips equal: {chips}")
         pot = 0
         player_cards = input("Enter your cards: ").split()
